@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>連番QRコード生成＆印刷 (A4対応)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* 画面表示用のスタイル */
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            margin: 20px;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        input[type="number"] {
+            padding: 8px;
+            font-size: 16px;
+            width: 100px;
+            margin: 0 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            margin: 0 5px;
+            color: #fff;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        .btn-generate { background-color: #007bff; }
+        .btn-print { background-color: #28a745; }
+        
+        #print-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 200px;
+        }
+        .qr-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            width: 120px;
+            box-sizing: border-box;
+            background: #fff;
+        }
+        .qr-label {
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        /* 印刷時専用のスタイル (A4対応) */
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm; /* A4用紙の余白 */
+            }
+            body {
+                margin: 0;
+                background-color: transparent;
+            }
+            /* 操作パネルは印刷しない */
+            .controls {
+                display: none;
+            }
+            #print-area {
+                padding: 0;
+                box-shadow: none;
+                /* A4縦で横に4つ並べるレイアウト */
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10mm 5mm; 
+                justify-content: space-between;
+            }
+            .qr-item {
+                border: none; /* 印刷時は枠線を消す場合 */
+                /* border: 1px solid #ccc; // 枠線を残す場合はコメントアウトを外す */
+                padding: 0;
+                width: auto;
+                page-break-inside: avoid; /* 要素の途中で改ページさせない */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h2>連番QRコード生成ツール</h2>
+        <label>
+            開始: <input type="number" id="startNum" min="1" max="99999" value="1">
+        </label>
+        <span>〜</span>
+        <label>
+            終了: <input type="number" id="endNum" min="1" max="99999" value="20">
+        </label>
+        <button class="btn-generate" onclick="generateQRCodes()">生成する</button>
+        <button class="btn-print" onclick="window.print()">印刷する (A4)</button>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">※範囲は 1 〜 99999 の間で指定してください。</p>
+    </div>
+
+    <div id="print-area">
+        </div>
+
+    <script>
+        function generateQRCodes() {
+            const startInput = document.getElementById('startNum').value;
+            const endInput = document.getElementById('endNum').value;
+            const printArea = document.getElementById('print-area');
+            
+            // 入力値の数値化とバリデーション
+            const start = parseInt(startInput, 10);
+            const end = parseInt(endInput, 10);
+
+            if (isNaN(start) || isNaN(end) || start < 1 || end > 99999 || start > end) {
+                alert("正しい範囲を入力してください (1 〜 99999 までの整数で、開始 <= 終了)");
+                return;
+            }
+
+            // 以前のQRコードをクリア
+            printArea.innerHTML = '';
+
+            // 指定範囲でループ処理
+            for (let i = start; i <= end; i++) {
+                // 5桁のゼロ埋め文字列を作成 (例: 1 -> "00001")
+                const formattedNumber = String(i).padStart(5, '0');
+
+                // 要素の作成
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'qr-item';
+
+                const qrDiv = document.createElement('div');
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'qr-label';
+                labelDiv.textContent = formattedNumber;
+
+                // DOMに追加
+                itemDiv.appendChild(qrDiv);
+                itemDiv.appendChild(labelDiv);
+                printArea.appendChild(itemDiv);
+
+                // QRコードの描画
+                new QRCode(qrDiv, {
+                    text: formattedNumber,
+                    width: 100,  // QRコードの幅 (px)
+                    height: 100, // QRコードの高さ (px)
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            }
+        }
+    </script>
+</body>
+</html>
